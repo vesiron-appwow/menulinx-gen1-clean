@@ -1,0 +1,88 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="MenuLinx — Setup">
+<style>
+  .setup-wrap { max-width: 520px; margin: 4rem auto; padding: 2rem; }
+  .logo { text-align: center; margin-bottom: 2rem; }
+  .logo h1 { font-size: 2rem; color: var(--primary); }
+  .logo p { color: var(--grey); }
+  .card { background: white; border-radius: 16px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .field { margin-bottom: 1.25rem; }
+  .field label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; }
+  .field input, .field select { width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; }
+  .field input:focus, .field select:focus { border-color: var(--primary); outline: none; }
+  .submit-btn {
+    width: 100%; padding: 1rem; background: var(--primary); color: white;
+    font-size: 1.1rem; font-weight: 700; border-radius: 12px; margin-top: 0.5rem;
+  }
+  .submit-btn:hover { background: var(--primary-dark); }
+  .msg { padding: 1rem; border-radius: 10px; margin-bottom: 1rem; font-weight: 600; display: none; }
+  .msg.error { background: #fde8e8; color: var(--danger); display: block; }
+  .msg.success { background: #e8f5e9; color: var(--primary-dark); display: block; }
+</style>
+
+<div class="setup-wrap">
+  <div class="logo">
+    <h1>MenuLinx</h1>
+    <p>Create your restaurant in 30 seconds</p>
+  </div>
+  <div class="card">
+    <div id="msg" class="msg"></div>
+    <form id="setupForm">
+      <div class="field">
+        <label for="slug">Restaurant URL Slug</label>
+        <input id="slug" name="slug" placeholder="e.g. cozy-corner" required pattern="[a-z0-9\-]+" />
+      </div>
+      <div class="field">
+        <label for="name">Restaurant Name</label>
+        <input id="name" name="name" placeholder="e.g. The Cozy Corner" required />
+      </div>
+      <div class="field">
+        <label for="tagline">Tagline</label>
+        <input id="tagline" name="tagline" placeholder="e.g. Authentic Italian Cuisine" />
+      </div>
+      <div class="field">
+        <label for="currency">Currency</label>
+        <select id="currency" name="currency">
+          <option value="£">£ GBP</option>
+          <option value="€">€ EUR</option>
+          <option value="$">$ USD</option>
+        </select>
+      </div>
+      <button type="submit" class="submit-btn">Create Restaurant</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('setupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('msg');
+    const form = e.target;
+    const data = Object.fromEntries(new FormData(form));
+
+    msg.className = 'msg';
+    msg.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Setup failed');
+
+      msg.className = 'msg success';
+      msg.textContent = 'Restaurant created! Redirecting...';
+      msg.style.display = 'block';
+      setTimeout(() => window.location.href = `/${result.slug}`, 1000);
+    } catch (err) {
+      msg.className = 'msg error';
+      msg.textContent = err.message;
+      msg.style.display = 'block';
+    }
+  });
+</script>
+</Base>

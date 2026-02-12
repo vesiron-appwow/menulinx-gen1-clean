@@ -1,0 +1,86 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { getRestaurant, getAdminHash, setAdminHash } from '../../../lib/kv.js';
+import { hashPassword, verifyPassword, createSession, sessionCookie } from '../../../lib/auth.js';
+
+const { slug } = Astro.params;
+const kv = Astro.locals.runtime.env.MENULINX_KV;
+const kvSessions = Astro.locals.runtime.env.MENULINX_SESSIONS;
+
+const restaurant = await getRestaurant(kv, slug);
+if (!restaurant) return Astro.redirect('/404');
+
+const existingHash = await getAdminHash(kv, slug);
+const isFirstSetup = !existingHash;
+let error = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const form = await Astro.request.formData();
+    const password = form.get('password')?.toString() || '';
+
+    if (password.length < 6) {
+      error = 'Password must be at least 6 characters';
+    } else if (isFirstSetup) {
+      const hashed = await hashPassword(password);
+      await setAdminHash(kv, slug, hashed);
+      const token = await createSession(kvSessions, slug);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': `/${slug}/admin`,
+          'Set-Cookie': sessionCookie(token),
+        },
+      });
+    } else {
+      const valid = await verifyPassword(password, existingHash);
+      if (valid) {
+        const token = await createSession(kvSessions, slug);
+        return new Response(null, {
+          status: 302,
+          headers: {
+            'Location': `/${slug}/admin`,
+            'Set-Cookie': sessionCookie(token),
+          },
+        });
+      } else {
+        error = 'Incorrect password';
+      }
+    }
+  } catch (e) {
+    error = 'Something went wrong. Please try again.';
+  }
+}
+---
+<Base title={`Admin Login | ${restaurant.name}`} themeColor="#0057B8">
+<style>
+  .login-wrap { max-width: 400px; margin: 6rem auto; padding: 2rem; }
+  .card { background: white; border-radius: 16px; padding: 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+  .card h1 { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .card p { color: var(--grey); margin-bottom: 1.5rem; font-size: 0.9rem; }
+  .field { text-align: left; margin-bottom: 1.25rem; }
+  .field label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; }
+  .field input { width: 100%; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; }
+  .field input:focus { border-color: var(--admin-primary); outline: none; }
+  .submit-btn { width: 100%; padding: 0.9rem; background: #0057B8; color: white; font-size: 1rem; font-weight: 700; border-radius: 12px; }
+  .submit-btn:hover { background: #004494; }
+  .error-msg { background: #fde8e8; color: var(--danger); padding: 0.75rem; border-radius: 10px; margin-bottom: 1rem; font-weight: 600; font-size: 0.9rem; }
+  .back-link { display: inline-block; margin-top: 1.5rem; color: var(--admin-primary); font-weight: 600; }
+</style>
+
+<div class="login-wrap">
+  <div class="card">
+    <h1>{isFirstSetup ? 'Set Admin Password' : 'Admin Login'}</h1>
+    <p>{restaurant.name}</p>
+    {error && <div class="error-msg">{error}</div>}
+    <form method="POST">
+      <div class="field">
+        <label for="password">{isFirstSetup ? 'Choose a Password' : 'Password'}</label>
+        <input id="password" name="password" type="password" required minlength="6" placeholder={isFirstSetup ? 'Min 6 characters' : 'Enter password'} />
+      </div>
+      <button type="submit" class="submit-btn">{isFirstSetup ? 'Set Password & Enter' : 'Sign In'}</button>
+    </form>
+    <a href={`/${slug}`} class="back-link">Back to menu</a>
+  </div>
+</div>
+</Base>

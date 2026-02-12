@@ -1,0 +1,19 @@
+name = "menulinx-trade"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "./dist"
+
+# ──────────────────────────────────────────────
+# IMPORTANT: Replace the "id" values below with
+# the actual IDs from your KV namespace creation.
+# Run:  wrangler kv namespace create MENULINX_KV
+#        wrangler kv namespace create MENULINX_SESSIONS
+# Then paste the IDs here.
+# ──────────────────────────────────────────────
+
+[[kv_namespaces]]
+binding = "MENULINX_KV"
+id = "PASTE_YOUR_KV_ID_HERE"
+
+[[kv_namespaces]]
+binding = "MENULINX_SESSIONS"
+id = "PASTE_YOUR_SESSIONS_KV_ID_HERE"

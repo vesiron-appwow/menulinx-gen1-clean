@@ -1,0 +1,230 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getRestaurant, getMenu } from '../../lib/kv.js';
+
+const { slug } = Astro.params;
+const kv = Astro.locals.runtime.env.MENULINX_KV;
+
+const restaurant = await getRestaurant(kv, slug);
+if (!restaurant) return Astro.redirect('/404');
+
+const menu = await getMenu(kv, slug);
+const categories = [...new Set(menu.filter(i => i.available).map(i => i.category))];
+const cur = restaurant.currency || '£';
+---
+<Base title={restaurant.name} themeColor={restaurant.themeColor || '#28A745'}>
+
+<style>
+  .hero { background: linear-gradient(135deg, #28A745, #1e7e34); color: white; padding: 2rem; text-align: center; }
+  .hero h1 { font-size: 1.8rem; } .hero p { opacity: 0.9; margin-top: 0.3rem; }
+  .container { max-width: 800px; margin: 0 auto; padding: 1rem; }
+  .cat-nav { display: flex; gap: 0.5rem; overflow-x: auto; padding: 1rem 0; }
+  .cat-btn { padding: 0.5rem 1rem; border-radius: 20px; background: white; border: 2px solid #e0e0e0; font-weight: 600; font-size: 0.85rem; white-space: nowrap; }
+  .cat-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+  .menu-card { background: white; border-radius: 12px; padding: 1.25rem; margin-bottom: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+  .menu-card h3 { font-size: 1rem; margin-bottom: 0.2rem; } .menu-card p { font-size: 0.85rem; color: var(--grey); }
+  .price { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
+  .add-btn { background: var(--primary); color: white; width: 36px; height: 36px; border-radius: 50%; font-size: 1.3rem; line-height: 36px; text-align: center; }
+  .cat-heading { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e8e8e8; }
+
+  /* Cart bar */
+  .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--primary); color: white; padding: 1rem 2rem; display: none; justify-content: space-between; align-items: center; font-weight: 700; font-size: 1.1rem; z-index: 100; }
+  .cart-bar.show { display: flex; }
+
+  /* Checkout overlay */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; }
+  .overlay.show { display: flex; align-items: flex-end; }
+  .checkout-sheet { background: white; width: 100%; max-height: 85vh; border-radius: 20px 20px 0 0; padding: 2rem; overflow-y: auto; }
+  .checkout-sheet h2 { margin-bottom: 1rem; }
+  .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid #f0f0f0; }
+  .qty-ctrl { display: flex; align-items: center; gap: 0.75rem; }
+  .qty-btn { width: 30px; height: 30px; border-radius: 50%; background: #f0f0f0; font-size: 1.1rem; line-height: 30px; text-align: center; font-weight: 700; }
+  .form-field { margin-bottom: 1rem; }
+  .form-field label { display: block; font-weight: 600; margin-bottom: 0.3rem; font-size: 0.9rem; }
+  .form-field input, .form-field select, .form-field textarea { width: 100%; padding: 0.7rem; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; }
+  .place-btn { width: 100%; padding: 1rem; background: var(--primary); color: white; font-size: 1.1rem; font-weight: 700; border-radius: 12px; margin-top: 1rem; }
+  .totals { margin: 1rem 0; padding: 1rem; background: #f9f9f9; border-radius: 10px; }
+  .totals div { display: flex; justify-content: space-between; margin-bottom: 0.3rem; }
+  .totals .total-row { font-weight: 700; font-size: 1.1rem; border-top: 2px solid #e0e0e0; padding-top: 0.5rem; margin-top: 0.5rem; }
+  .confirmation { text-align: center; padding: 3rem 1rem; }
+  .confirmation h2 { color: var(--primary); margin-bottom: 0.5rem; }
+</style>
+
+<div class="hero">
+  <h1>{restaurant.name}</h1>
+  {restaurant.tagline && <p>{restaurant.tagline}</p>}
+</div>
+
+<div class="container">
+  {categories.length > 1 && (
+    <div class="cat-nav">
+      {categories.map((cat, i) => (
+        <button class={`cat-btn ${i === 0 ? 'active' : ''}`} data-cat={cat}>{cat}</button>
+      ))}
+    </div>
+  )}
+
+  {categories.map(cat => (
+    <div class="cat-section" data-category={cat}>
+      <h2 class="cat-heading">{cat}</h2>
+      {menu.filter(i => i.available && i.category === cat).map(item => (
+        <div class="menu-card" data-id={item.id} data-name={item.name} data-price={item.price}>
+          <div>
+            <h3>{item.name}</h3>
+            {item.description && <p>{item.description}</p>}
+            <span class="price">{cur}{item.price.toFixed(2)}</span>
+          </div>
+          <button class="add-btn" data-id={item.id}>+</button>
+        </div>
+      ))}
+    </div>
+  ))}
+</div>
+
+<!-- Cart bar -->
+<div class="cart-bar" id="cartBar">
+  <span id="cartSummary">0 items</span>
+  <span id="cartTotal">{cur}0.00</span>
+</div>
+
+<!-- Checkout overlay -->
+<div class="overlay" id="overlay">
+  <div class="checkout-sheet" id="checkoutSheet">
+    <h2>Your Order</h2>
+    <div id="cartItems"></div>
+    <div class="totals" id="totals"></div>
+    <form id="checkoutForm">
+      <div class="form-field">
+        <label>Your Name</label>
+        <input name="customerName" required />
+      </div>
+      <div class="form-field">
+        <label>Phone Number</label>
+        <input name="customerPhone" type="tel" required />
+      </div>
+      <div class="form-field">
+        <label>Order Type</label>
+        <select name="orderType">
+          {restaurant.orderTypes?.map(t => <option value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Notes (optional)</label>
+        <textarea name="notes" rows="2"></textarea>
+      </div>
+      <button type="submit" class="place-btn">Place Order</button>
+    </form>
+    <div class="confirmation" id="confirmation" style="display:none">
+      <h2>Order Placed!</h2>
+      <p>We'll text you when it's ready.</p>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ slug, currency: cur, deliveryFee: restaurant.deliveryFee || 0 }}>
+  const cart = {};
+
+  function updateUI() {
+    const items = Object.values(cart);
+    const count = items.reduce((s, i) => s + i.qty, 0);
+    const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const bar = document.getElementById('cartBar');
+    document.getElementById('cartSummary').textContent = `${count} item${count !== 1 ? 's' : ''}`;
+    document.getElementById('cartTotal').textContent = `${currency}${total.toFixed(2)}`;
+    bar.classList.toggle('show', count > 0);
+  }
+
+  // Add to cart
+  document.querySelectorAll('.add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const card = btn.closest('.menu-card');
+      const id = card.dataset.id;
+      if (!cart[id]) cart[id] = { id, name: card.dataset.name, price: parseFloat(card.dataset.price), qty: 0 };
+      cart[id].qty++;
+      updateUI();
+    });
+  });
+
+  // Category nav
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cat = btn.dataset.cat;
+      document.querySelectorAll('.cat-section').forEach(s => {
+        s.style.display = s.dataset.category === cat ? '' : 'none';
+      });
+    });
+  });
+
+  // Open checkout
+  document.getElementById('cartBar').addEventListener('click', () => {
+    const items = Object.values(cart);
+    if (items.length === 0) return;
+    const container = document.getElementById('cartItems');
+    container.innerHTML = items.map(i => `
+      <div class="cart-item" data-id="${i.id}">
+        <div><strong>${i.name}</strong><br>${currency}${i.price.toFixed(2)}</div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty('${i.id}',-1)">−</button>
+          <span>${i.qty}</span>
+          <button class="qty-btn" onclick="changeQty('${i.id}',1)">+</button>
+        </div>
+      </div>`).join('');
+
+    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const fee = document.querySelector('[name=orderType]')?.value === 'delivery' ? deliveryFee : 0;
+    document.getElementById('totals').innerHTML = `
+      <div><span>Subtotal</span><span>${currency}${subtotal.toFixed(2)}</span></div>
+      ${fee > 0 ? `<div><span>Delivery</span><span>${currency}${fee.toFixed(2)}</span></div>` : ''}
+      <div class="total-row"><span>Total</span><span>${currency}${(subtotal + fee).toFixed(2)}</span></div>`;
+
+    document.getElementById('overlay').classList.add('show');
+    document.getElementById('checkoutForm').style.display = '';
+    document.getElementById('confirmation').style.display = 'none';
+  });
+
+  // Close overlay on background click
+  document.getElementById('overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('overlay')) {
+      document.getElementById('overlay').classList.remove('show');
+    }
+  });
+
+  // Qty change
+  window.changeQty = (id, delta) => {
+    if (!cart[id]) return;
+    cart[id].qty += delta;
+    if (cart[id].qty <= 0) delete cart[id];
+    updateUI();
+    // Re-render checkout
+    document.getElementById('cartBar').click();
+  };
+
+  // Place order
+  document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const items = Object.values(cart).map(i => ({ id: i.id, name: i.name, price: i.price, qty: i.qty }));
+    const fee = fd.get('orderType') === 'delivery' ? deliveryFee : 0;
+
+    try {
+      const res = await fetch(`/api/${slug}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items, customerName: fd.get('customerName'), customerPhone: fd.get('customerPhone'),
+          orderType: fd.get('orderType'), notes: fd.get('notes'), deliveryFee: fee,
+        }),
+      });
+      if (!res.ok) throw new Error('Order failed');
+      document.getElementById('checkoutForm').style.display = 'none';
+      document.getElementById('confirmation').style.display = '';
+      Object.keys(cart).forEach(k => delete cart[k]);
+      updateUI();
+    } catch (err) {
+      alert('Sorry, order failed. Please try again.');
+    }
+  });
+</script>
+</Base>

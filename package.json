@@ -1,0 +1,15 @@
+{
+  "name": "menulinx-trade",
+  "version": "1.0.0",
+  "description": "MenuLinx Trade — White-label restaurant ordering PWA on Astro + Cloudflare",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "wrangler pages dev ./dist",
+    "deploy": "astro build && wrangler pages deploy ./dist --project-name=menulinx-trade"
+  },
+  "dependencies": {
+    "astro": "^4.16.0",
+    "@astrojs/cloudflare": "^11.0.0"
+  }
+}

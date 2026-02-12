@@ -1,0 +1,33 @@
+---
+const { title = 'MenuLinx', themeColor = '#28A745' } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content={themeColor} />
+  <title>{title}</title>
+  <style is:global>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #28A745; --primary-dark: #1e7e34;
+      --admin-primary: #0057B8; --admin-secondary: #00C8E8;
+      --danger: #DC3545; --warning: #FFC107;
+      --dark: #0A0A0A; --grey: #4A4A4A; --light-grey: #F2F2F2; --white: #ffffff;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--light-grey); color: var(--dark); line-height: 1.6;
+    }
+    a { text-decoration: none; color: inherit; }
+    button, input, select, textarea { font-family: inherit; }
+    button { cursor: pointer; border: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  </style>
+  <slot name="head" />
+</head>
+<body>
+  <slot />
+</body>
+</html>
