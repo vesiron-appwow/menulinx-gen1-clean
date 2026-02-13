@@ -28,7 +28,23 @@ const cur = restaurant.currency || '£';
   .cat-heading { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e8e8e8; }
 
   /* Cart bar */
-  .cart-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--primary); color: white; padding: 1rem 2rem; display: none; justify-content: space-between; align-items: center; font-weight: 700; font-size: 1.1rem; z-index: 100; }
+  .cart-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--primary);
+  color: white;
+  padding: 1rem 2rem;
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  z-index: 100;
+  cursor: pointer;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+}
+
   .cart-bar.show { display: flex; }
 
   /* Checkout overlay */
@@ -83,9 +99,18 @@ const cur = restaurant.currency || '£';
 
 <!-- Cart bar -->
 <div class="cart-bar" id="cartBar">
-  <span id="cartSummary">0 items</span>
-  <span id="cartTotal">{cur}0.00</span>
+  <div>
+    <div id="cartSummary" style="font-size:0.9rem; opacity:0.9;">0 items</div>
+    <div style="font-size:1.15rem; font-weight:800;">
+      View Cart • Checkout
+    </div>
+  </div>
+
+  <div id="cartTotal" style="font-size:1.2rem; font-weight:800;">
+    {cur}0.00
+  </div>
 </div>
+
 
 <!-- Checkout overlay -->
 <div class="overlay" id="overlay">
@@ -217,11 +242,19 @@ const cur = restaurant.currency || '£';
           orderType: fd.get('orderType'), notes: fd.get('notes'), deliveryFee: fee,
         }),
       });
-      if (!res.ok) throw new Error('Order failed');
-      document.getElementById('checkoutForm').style.display = 'none';
-      document.getElementById('confirmation').style.display = '';
-      Object.keys(cart).forEach(k => delete cart[k]);
-      updateUI();
+     document.getElementById('checkoutForm').style.display = 'none';
+document.getElementById('confirmation').style.display = '';
+
+// Clear cart immediately
+Object.keys(cart).forEach(k => delete cart[k]);
+updateUI();
+
+// Auto-close after short delay
+setTimeout(() => {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('checkoutForm').style.display = '';
+}, 2000);
+
     } catch (err) {
       alert('Sorry, order failed. Please try again.');
     }

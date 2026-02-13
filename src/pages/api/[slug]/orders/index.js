@@ -2,10 +2,10 @@
  * POST /api/[slug]/orders — Create a new order (customer, no auth)
  * GET  /api/[slug]/orders — List active orders (admin, session required)
  */
-import { createOrder, getOrders, getRestaurant } from '../../../lib/kv.js';
-import { requireAuth } from '../../../lib/auth.js';
-import { sendSMS } from '../../../lib/sms.js';
-import { sanitise, sanitisePhone } from '../../../lib/sanitise.js';
+import { createOrder, getOrders, getRestaurant } from '../../../../lib/kv.js';
+import { requireAuth } from '../../../../lib/auth.js';
+import { sendSMS } from '../../../../lib/sms.js';
+import { sanitise, sanitisePhone } from '../../../../lib/sanitise.js';
 
 export async function POST({ params, request, locals }) {
   const kv = locals.runtime.env.MENULINX_KV;

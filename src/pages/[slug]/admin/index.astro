@@ -130,10 +130,14 @@ const cur = restaurant.currency || '£';
             const bl = o.status === 'new' ? 'New' : o.status === 'accepted' ? 'Preparing' : o.status === 'ready' ? 'Ready' : o.status;
             return (
               <div class={`order-card ${sc}`} data-order-id={o.id}>
-                <div class="order-header">
-                  <strong>{o.customerName} — #{o.id.slice(-4)}</strong>
-                  <span class={`badge ${bc}`}>{bl}</span>
-                </div>
+               <div class="order-header">
+  <div>
+    <strong>{o.customerName} — #{o.id.slice(-4)}</strong><br />
+    <small style="color:#666;">{o.customerPhone}</small>
+  </div>
+  <span class={`badge ${bc}`}>{bl}</span>
+</div>
+ 
                 <div class="order-items">{o.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</div>
                 <div style="font-weight:700;">{cur}{o.total.toFixed(2)} — {o.orderType}</div>
                 {o.notes && <div style="font-size:0.85rem; color:#888; margin-top:0.3rem;">Note: {o.notes}</div>}
@@ -241,6 +245,7 @@ const cur = restaurant.currency || '£';
 <script define:vars={{ slug, ordersJson: JSON.stringify(orders), currency: cur }}>
   window.__MLX__ = { slug, orders: JSON.parse(ordersJson), currency };
 </script>
-<script src="/js/admin.js"></script>
+<script src="/js/admin.js" is:inline></script>
+
 
 </Base>
