@@ -4,8 +4,8 @@ pages_build_output_dir = "./dist"
 
 [[kv_namespaces]]
 binding = "MENULINX_KV"
-id = "377127e0ae9c4e42bb6e5a6ec62665dc"
+id = "eb044b3a45ef408bbf1901b198bd0c74"
 
 [[kv_namespaces]]
 binding = "MENULINX_SESSIONS"
-id = "47e11789c3734944812256cb375ba6c0"
+id = "ca14eccec97349a189d4ba03e98d9bbe"
